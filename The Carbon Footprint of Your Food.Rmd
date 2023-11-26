@@ -1,0 +1,321 @@
+---
+title: "Greenhouse Gas Emisssions Across the Supply Chain"
+output: pdf_document
+classoption: landscape
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, 
+                      message = FALSE,
+                      warning = FALSE, 
+                      out.width="\\textwidth",
+                      fig.align="center")
+library(tidyverse)
+library(readr)
+#library(cowplot)
+```
+
+
+```{r, echo = F}
+Food_Production <- read_csv("Food_Production.csv", show_col_types = F)
+```
+
+Food production and agriculture accounts for over a quarter of global greenhouse gas (GHG) emission, representing a major contributor to climate change. However, impacts vary widely across different food groups and stages of production. To determine the highest-impact changes, we need an evidence and data on varying emission magnitude and distributions across different food groups and supply chain stages.  
+The analysis uses granular life cycle assessment (LCA) data on GHG emissions encompassing 43 key foods, from beef and dairy through plant-based staples. The data is from a study published by Joseph Poore and Thomas Nemeck (2018), which compiled a massive database of GHG emissions from about 38,700 commercial farms in 199 countries. Data was collected through a bottom-up life cycle assessment methodology. This involves quantifying resource use and environmental emissions at each stage of a product's supply chain - from inputs and land use changes through production, processing, transport and retail. By quantifying per-kilogram carbon dioxide emissions across the farm-to-retail supply chain, data provide a complete map of environmental hotspots across chains. Then, we can contrast distributions and magnitudes by food type provides robust evidence for high-impact mitigation points - insights more critical than "food miles" when determining leverage.  
+In this comparison, there are massive differences in terms of kilogram CO2-equivalent emissions between animal-based and plant-based foods. Of the five highest-emitting foods, four are meats and dairy: beef cattle, dairy cattle, lamb and sheep, and cheese all produce more than 20 kilograms CO2-equivalent per kilogram. In contrast, the highest plant food - chocolate - emits only 19 kilograms, and most plant foods generate less than 3 kilograms per kilogram. The highest emitter - beef from beef herds - results in 60 kilograms of GHG per kilogram - about 3 times the highest footprint of plant-based protein sources - chocolate. Additionally, the average emissions among animal-based foods is 16.39 kilograms of GHG per kilogram, compared to 2.82 kilograms of GHG per kilogram for the average emissions among plant-based foods.  
+If we examine emissions distribution across supply chain stages, we again see animal-based products are in a league of their own. For beef, lamb, cheese and other meats, agricultural production and land use conversion constitute the vast majority of emissions - over 80% for beef. The major sources are methane from livestock and carbon dioxide from converted lands. For beef, the farm stage emissions (shown in brown) from cattle methane and manure exceed two third alone. Land use change impacts (shown in green) account for another a quarter. Compared to farming's dominance, processing, transport, retail, and packaging play minor roles, with transport representing less than 10%.  Across animal-based categories, farm, land use change and animal feed emissions for animal products account for about 90% of the total. The data exhibits a consistent trend: agricultural phases drive the substantial footprint, not food miles. Whether animal foods are raised locally or globally, it is the biological emissions inherent in livestock production that lead to outsized impacts, not geographic considerations.  
+For vegetables, grains and legumes, 70-80% of impacts stem from agriculture like fertilizer use and farm equipment operation; land use change plays a minor role. Transport emissions account for less than 10% across this category. What drives the footprint of plant foods is not food miles but farming practices and production efficiency. There is large variation even within crop types based on irrigation method, fertilizer inputs and yield. But regardless of how and where plant foods are grown, transportation has a small influence on total impact. The data makes clear that for plant-based foods, changes to agricultural phases can reduce footprints significantly while geographic factors are negligible. Even fruits and vegetables shipped intercontinental result in modest transport emissions that pale compared to their farming footprints.  
+In summary, massive differences exist in food's climate impact based on clear evidence - animal-based products result in exponentially higher greenhouse emissions than plants. The supply chain analysis provides evidence that when it comes to food's climate impact, farming practices and efficiency dominate emissions for crop-based foods, while transport is largely negligible. The supply chain analysis highlights how curbing the climate impact of our diets fundamentally requires transitioning towards plant-based proteins, implementing low-carbon agricultural practices, and addressing emissions at their root source - on farms themselves.
+
+```{r, fig.cap="GHG emissions across the supply chain", echo = F}
+Food_Production_Emissions <- Food_Production %>%
+  select(`Food product`:`Retail`) %>%
+  gather(`Land use change`:`Retail`, key = "Group", val = "Emissions")
+
+data_food_production <- Food_Production %>% 
+  arrange(`Total_emissions`) %>%
+  select(`Food product`, `Total_emissions`) %>%
+  mutate(rank = rank(`Total_emissions`))
+
+Food_Production_Emissions$`Food product` <- factor(Food_Production_Emissions$`Food product`, levels=data_food_production$`Food product`)
+Food_Production_Emissions <- Food_Production_Emissions %>%
+  mutate(Group_2 = case_when(
+    Group == "Land use change" ~ "1", 
+    Group == "Farm" ~ "2", 
+    Group == "Animal Feed" ~ "3", 
+    Group == "Processing" ~ "4", 
+    Group == "Transport" ~ "5", 
+    Group == "Retail" ~ "6",
+    TRUE ~ "7"
+  ))
+
+Food_Production_Emissions$Group_2 <- factor(Food_Production_Emissions$Group_2, ordered = F, 
+                                          levels = c("7", "6", "5", "4", "3", "2", "1"))
+
+ggplot(Food_Production_Emissions, 
+         aes(x = `Food product`, y = `Emissions`, fill = Group_2)) + 
+  geom_bar(stat = "identity") +
+  coord_flip() + 
+  theme_classic() + 
+  labs(y = "GHG Emissions per kilogram of food product \n (kgCO2 - equivalents per kg product)") +
+  scale_y_continuous(limits = c(0, 60), breaks = seq(0, 60, 5)) +
+  theme(legend.title=element_blank(), legend.position = c(0.9, 0.4),
+        legend.key.size = unit(0.25, 'cm'),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8), 
+        legend.text = element_text(size = 6)) + 
+  scale_fill_manual(values= c("dark green","brown", "orange", "dark blue",  "red", "yellow", "grey50"),
+    breaks=c("1", "2", "3", "4", "5", "6", "7"),
+    labels=c("Land Use Change", "Farm", "Animal Feed", "Processing", "Transport", "Retail", "Packaging"))
+
+```
+
+
+\newpage 
+The data covers multiple environmental indicators beyond GHG emissions - including freshwater use, water scarcity, land usage, and eutrophication. Each category gets analyzed per functional unit - per calorie, protein content, and product weight. This multi-lens perspective reveals shifts in highest-impact foods. While apples rank low in land use, their water scarcity footprint per calorie raises concerns. For freshwater withdrawals, the leading products per kilocalorie (cheese, fish) differ from top contributors on a per protein basis (berries, apples). Comparing rankings, certain items like beef, cheese, rice, and tomatoes rank among top offenders across units, while relative impacts of nuts or fruit fluctuate. A complete picture necessitates evaluating both functional flow and environmental domain.  
+
+### Land Use 
+
+```{r landuse, fig.cap="Land use across food products", echo = F}
+p1 <- Food_Production %>%
+  select(`Food product`, `Land use per 1000kcal (m2 per 1000kcal)`) %>%
+  filter(!is.na(`Land use per 1000kcal (m2 per 1000kcal)`)) %>%
+  ggplot(aes(fct_reorder(`Food product`,`Land use per 1000kcal (m2 per 1000kcal)`), `Land use per 1000kcal (m2 per 1000kcal)`)) +
+  geom_col(fill = "dark green") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per 1000kcal \n (m2 per 1000kcal)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 300), breaks = seq(0, 300, 100)) +
+  theme(axis.title.x = element_text(size = 8),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+p2 <- Food_Production %>%
+  select(`Food product`, `Land use per 100g protein (m2 per 100g protein)`) %>%
+  filter(!is.na(`Land use per 100g protein (m2 per 100g protein)`)) %>%
+  ggplot(aes(reorder(`Food product`,`Land use per 100g protein (m2 per 100g protein)`), `Land use per 100g protein (m2 per 100g protein)`)) +
+  geom_col(fill = "dark green") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per 100g protein \n (m² per 100g protein)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 300), breaks = seq(0, 300, 100)) +
+  theme(axis.title.x = element_text(size = 8),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+p3 <- Food_Production %>%
+  select(`Food product`, `Land use per kilogram (m2 per kilogram)`) %>%
+  filter(!is.na(`Land use per kilogram (m2 per kilogram)`)) %>%
+  ggplot(aes(reorder(`Food product`,`Land use per kilogram (m2 per kilogram)`), `Land use per kilogram (m2 per kilogram)`)) +
+  geom_col(fill = "dark green") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per kilogram \n (m² per kilogram)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 400), breaks = seq(0, 300, 100)) +
+  theme(axis.title.x = element_text(size = 8),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+gridExtra::grid.arrange(p1, p2, p3, ncol=3)
+```
+
+### Freshwater withdrawals 
+
+```{r freshwater, fig.cap="Freshwater withdrawals across food products", echo = F}
+p1 <- Food_Production %>%
+  select(`Food product`, `Freshwater withdrawals per 1000kcal (liters per 1000kcal)`) %>%
+  filter(!is.na(`Freshwater withdrawals per 1000kcal (liters per 1000kcal)`)) %>%
+  ggplot(aes(fct_reorder(`Food product`,`Freshwater withdrawals per 1000kcal (liters per 1000kcal)`), `Freshwater withdrawals per 1000kcal (liters per 1000kcal)`)) +
+  geom_col(fill = "#56B4E9") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per 1000kcal \n (liters per 1000kcal)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 6000), breaks = seq(0, 6000, 2000)) +
+  theme(axis.title.x = element_text(size = 8),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+p2 <- Food_Production %>%
+  select(`Food product`, `Freshwater withdrawals per 100g protein (liters per 100g protein)`) %>%
+  filter(!is.na(`Freshwater withdrawals per 100g protein (liters per 100g protein)`)) %>%
+  ggplot(aes(reorder(`Food product`,`Freshwater withdrawals per 100g protein (liters per 100g protein)`), `Freshwater withdrawals per 100g protein (liters per 100g protein)`)) +
+  geom_col(fill = "#56B4E9") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per 100g protein \n (liters per 100g protein)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 6500), breaks = seq(0, 6000, 2000)) +
+  theme(axis.title.x = element_text(size = 8),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+p3 <- Food_Production %>%
+  select(`Food product`, `Freshwater withdrawals per kilogram (liters per kilogram)`) %>%
+  filter(!is.na(`Freshwater withdrawals per kilogram (liters per kilogram)`)) %>%
+  ggplot(aes(reorder(`Food product`,`Freshwater withdrawals per kilogram (liters per kilogram)`), `Freshwater withdrawals per kilogram (liters per kilogram)`)) +
+  geom_col(fill = "#56B4E9") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per kilogram \n (liters per kilogram)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 6000), breaks = seq(0, 6000, 2000)) +
+  theme(axis.title.x = element_text(size = 8),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+gridExtra::grid.arrange(p1, p2, p3, ncol=3)
+```
+
+### Scarcity-weighted water use 
+
+```{r water_use, fig.cap = "Scarcity-weighted water use across food products", echo = F}
+p1 <- Food_Production %>%
+  select(`Food product`, `Scarcity-weighted water use per 1000kcal (liters per 1000 kilocalories)`) %>%
+  mutate(`Scarcity-weighted water use per 1000kcal (liters per 1000 kilocalories)`=`Scarcity-weighted water use per 1000kcal (liters per 1000 kilocalories)`/1000) %>%
+  filter(!is.na(`Scarcity-weighted water use per 1000kcal (liters per 1000 kilocalories)`)) %>%
+  ggplot(aes(fct_reorder(`Food product`,`Scarcity-weighted water use per 1000kcal (liters per 1000 kilocalories)`), `Scarcity-weighted water use per 1000kcal (liters per 1000 kilocalories)`)) +
+  geom_col(fill = "#0072B2") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per 1000kcal \n (thousand liters per 1000kcal)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 400), breaks = seq(0, 400, 100)) +
+  theme(axis.title.x = element_text(size = 7.5),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+p2 <- Food_Production %>%
+  select(`Food product`, `Scarcity-weighted water use per 100g protein (liters per 100g protein)`) %>%
+  mutate(`Scarcity-weighted water use per 100g protein (liters per 100g protein)`=`Scarcity-weighted water use per 100g protein (liters per 100g protein)`/10^3) %>%
+  filter(!is.na(`Scarcity-weighted water use per 100g protein (liters per 100g protein)`)) %>%
+  ggplot(aes(reorder(`Food product`,`Scarcity-weighted water use per 100g protein (liters per 100g protein)`), `Scarcity-weighted water use per 100g protein (liters per 100g protein)`)) +
+  geom_col(fill = "#0072B2") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per 100g protein \n (thousand liters per 100g protein)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 450), breaks = seq(0, 400, 100)) +
+  theme(axis.title.x = element_text(size = 7.3),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+p3 <- Food_Production %>%
+  select(`Food product`, `Scarcity-weighted water use per kilogram (liters per kilogram)`) %>%
+  mutate(`Scarcity-weighted water use per kilogram (liters per kilogram)` = `Scarcity-weighted water use per kilogram (liters per kilogram)`/1000) %>%
+  filter(!is.na(`Scarcity-weighted water use per kilogram (liters per kilogram)`)) %>%
+  ggplot(aes(reorder(`Food product`,`Scarcity-weighted water use per kilogram (liters per kilogram)`), `Scarcity-weighted water use per kilogram (liters per kilogram)`)) +
+  geom_col(fill = "#0072B2") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per kilogram \n (thousand liters per kilogram)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 400), breaks = seq(0, 400, 100)) +
+  theme(axis.title.x = element_text(size = 7.5),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+gridExtra::grid.arrange(p1, p2, p3, ncol=3)
+```
+
+### GHG emissions 
+
+```{r greenhous_gas_emissions, fig.cap = "GHG emissions across food products", echo = F}
+p1 <- Food_Production %>%
+  select(`Food product`, `Greenhouse gas emissions per 1000kcal (kgCO2eq per 1000kcal)`) %>%
+  filter(!is.na(`Greenhouse gas emissions per 1000kcal (kgCO2eq per 1000kcal)`)) %>%
+  ggplot(aes(fct_reorder(`Food product`,`Greenhouse gas emissions per 1000kcal (kgCO2eq per 1000kcal)`), `Greenhouse gas emissions per 1000kcal (kgCO2eq per 1000kcal)`)) +
+  geom_col(fill = "#009E73") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per 1000kcal \n (kgCO2eq per 1000kcal)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 20)) +
+  theme(axis.title.x = element_text(size = 8),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+p2 <- Food_Production %>%
+  select(`Food product`, `Greenhouse gas emissions per 100g protein (kgCO2eq per 100g protein)`) %>%
+  filter(!is.na(`Greenhouse gas emissions per 100g protein (kgCO2eq per 100g protein)`)) %>%
+  ggplot(aes(reorder(`Food product`,`Greenhouse gas emissions per 100g protein (kgCO2eq per 100g protein)`), `Greenhouse gas emissions per 100g protein (kgCO2eq per 100g protein)`)) +
+  geom_col(fill = "#009E73") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per 100g protein \n (kgCO2eq per 100g protein)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 20)) +
+  theme(axis.title.x = element_text(size = 8),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+gridExtra::grid.arrange(p1, p2, ncol=3)
+```
+
+### Eutrophying emissions 
+
+```{r eutrophying_emissions, fig.cap = "Eutrophying emissions across food products", echo = F}
+p1 <- Food_Production %>%
+  select(`Food product`, `Eutrophying emissions per 1000kcal (gPO4eq per 1000kcal)`) %>%
+  filter(!is.na(`Eutrophying emissions per 1000kcal (gPO4eq per 1000kcal)`)) %>%
+  ggplot(aes(fct_reorder(`Food product`,`Eutrophying emissions per 1000kcal (gPO4eq per 1000kcal)`), `Eutrophying emissions per 1000kcal (gPO4eq per 1000kcal)`)) +
+  geom_col(fill = "#D55E00") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per 1000kcal \n (gPO4eq per 1000kcal)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 300), breaks = seq(0, 300, 100)) +
+  theme(axis.title.x = element_text(size = 8),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+p2 <- Food_Production %>%
+  select(`Food product`, `Eutrophying emissions per kilogram (gPO4eq per kilogram)`) %>%
+  filter(!is.na(`Eutrophying emissions per kilogram (gPO4eq per kilogram)`)) %>%
+  ggplot(aes(reorder(`Food product`,`Eutrophying emissions per kilogram (gPO4eq per kilogram)`), `Eutrophying emissions per kilogram (gPO4eq per kilogram)`)) +
+  geom_col(fill = "#D55E00") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per 100g protein \n (gPO4eq per 100g protein)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 400), breaks = seq(0, 300, 100)) +
+  theme(axis.title.x = element_text(size = 8),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+p3 <- Food_Production %>%
+  select(`Food product`, `Eutrophying emissions per 100g protein (gPO4eq per 100 grams protein)`) %>%
+  filter(!is.na(`Eutrophying emissions per 100g protein (gPO4eq per 100 grams protein)`)) %>%
+  ggplot(aes(reorder(`Food product`,`Eutrophying emissions per 100g protein (gPO4eq per 100 grams protein)`), `Eutrophying emissions per 100g protein (gPO4eq per 100 grams protein)`)) +
+  geom_col(fill = "#D55E00") +
+  coord_flip() + 
+  labs(x = "Food Product", y = "per kilogram \n (gPO4eq per kilogram)") +
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 300), breaks = seq(0, 300, 100)) +
+  theme(axis.title.x = element_text(size = 8),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 8),
+        )
+
+gridExtra::grid.arrange(p1, p2, p3, ncol=3)
+```
+
