@@ -1,3 +1,5 @@
 # The Carbon Footprint of Your Food
 
 This analysis examines the greenhouse gas (GHG) emissions across the supply chain for major food categories, from beef production through fruits and vegetables. Leveraging detailed life cycle assessment data encompassing 43 key foods, it benchmarks contributions from agriculture, land use conversion, animal feed, processing, transportation, and packaging. By evaluating both total emission magnitudes per kilogram and distribution across supply chain stages, the relative climate impact of our diets gets revealed —along with potential high-impact mitigation points.
+Data is collected from website kaggle.com at the link https://www.kaggle.com/datasets/selfvivek/environment-impact-of-food-production/data
+The analysis is motivated from the article "You want to reduce the carbon footprint of your food? Focus on what you eat, not whether your food is local" written by Hannah Ritchie at ourworldindata.org, https://ourworldindata.org/food-choice-vs-eating-local.
